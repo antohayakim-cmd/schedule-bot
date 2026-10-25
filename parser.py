@@ -16,6 +16,9 @@ MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
 log = logging.getLogger(__name__)
 
+ONLINE_BUILDING_MARKERS = ("виртуальн", "онлайн", "online", "дистанц", "эиос")
+ONLINE_ROOM_MARKERS = ("д.а", "дист", "онлайн", "online", "эиос", "zoom", "webinar")
+
 
 def _first_present(item: dict, *keys: str, default: str = "") -> str:
     """Возвращает первое непустое значение по списку ключей."""
@@ -24,6 +27,21 @@ def _first_present(item: dict, *keys: str, default: str = "") -> str:
         if value not in (None, ""):
             return str(value)
     return default
+
+
+def _is_online_lesson(raw: dict, building: str, room: str, url: str) -> bool:
+    """Определяет, проходит ли занятие онлайн (дистанционно)."""
+    b_low = building.strip().lower()
+    r_low = room.strip().lower()
+    if any(marker in b_low for marker in ONLINE_BUILDING_MARKERS):
+        return True
+    if any(marker in r_low for marker in ONLINE_ROOM_MARKERS):
+        return True
+    if raw.get("buildingOid") == 1 or raw.get("auditoriumOid") == 118:
+        return True
+    if url:
+        return True
+    return False
 
 
 def _parse_datetime(raw_date: str, raw_time: str) -> datetime:
@@ -75,6 +93,7 @@ def parse_lessons(raw_items: list[dict]) -> list[Lesson]:
             )
             building = _first_present(raw, "building", "buildingNumber", "corpus")
             room = _first_present(raw, "auditorium", "room", "aud")
+            url = _first_present(raw, "url1", "url2", "url").strip()
 
             raw_date = _first_present(raw, "date", "Date")
             begin_time = _first_present(raw, "beginLesson", "startTime", "begin")
@@ -82,6 +101,7 @@ def parse_lessons(raw_items: list[dict]) -> list[Lesson]:
 
             start_dt = _parse_datetime(raw_date, begin_time)
             end_dt = _parse_datetime(raw_date, end_time)
+            is_online = _is_online_lesson(raw, building, room, url)
 
             lessons.append(
                 Lesson(
@@ -93,6 +113,8 @@ def parse_lessons(raw_items: list[dict]) -> list[Lesson]:
                     room=room or "?",
                     start_datetime=start_dt,
                     end_datetime=end_dt,
+                    is_online=is_online,
+                    url=url,
                 )
             )
         except (ValueError, KeyError, TypeError) as exc:
