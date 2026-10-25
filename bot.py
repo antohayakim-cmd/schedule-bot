@@ -19,13 +19,19 @@ ERROR_TEXT = "Не удалось загрузить расписание. По�
 
 
 def format_lesson(lesson: Lesson) -> str:
-    return (
-        f"📚 {lesson.subject}\n"
-        f"🕐 {format_hm(lesson.start_datetime)}–{format_hm(lesson.end_datetime)}\n"
-        f"👤 {lesson.teacher}\n"
-        f"🏛 Корпус {lesson.building}, аудитория {lesson.room}\n"
-        f"📝 {lesson.lesson_type}"
-    )
+    lines = [
+        f"📚 {lesson.subject}",
+        f"🕐 {format_hm(lesson.start_datetime)}–{format_hm(lesson.end_datetime)}",
+        f"👤 {lesson.teacher}",
+    ]
+    if lesson.is_online:
+        lines.append("💻 Формат: ОНЛАЙН (дистанционно)")
+        if lesson.url:
+            lines.append(f"🔗 {lesson.url}")
+    else:
+        lines.append(f"🏛 {lesson.building}, ауд. {lesson.room}")
+    lines.append(f"📝 {lesson.lesson_type}")
+    return "\n".join(lines)
 
 
 def format_schedule(lessons: list[Lesson], day_date: date) -> str:
