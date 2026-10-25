@@ -42,6 +42,28 @@ class CalendarTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_lessons([{"date": "bad"}])
 
+    def test_online_lesson_detection(self):
+        offline = parse_lessons([RAW])[0]
+        self.assertFalse(offline.is_online)
+        self.assertIn("201", format_schedule([offline], date(2026, 9, 24)))
+
+        raw_online = dict(RAW, building="Виртуальное", auditorium="д.а.")
+        lesson = parse_lessons([raw_online])[0]
+        self.assertTrue(lesson.is_online)
+        text = format_schedule([lesson], date(2026, 9, 24))
+        self.assertIn("ОНЛАЙН", text)
+        self.assertNotIn("ауд.", text)
+
+        room_online = parse_lessons([dict(RAW, auditorium="д.а.")])[0]
+        self.assertTrue(room_online.is_online)
+
+        url_online = parse_lessons([dict(RAW, url1="https://zoom.us/j/123")])[0]
+        self.assertTrue(url_online.is_online)
+        self.assertIn("https://zoom.us/j/123", format_schedule([url_online], date(2026, 9, 24)))
+
+        oid_online = parse_lessons([dict(RAW, buildingOid=1)])[0]
+        self.assertTrue(oid_online.is_online)
+
     def test_long_message(self):
         chunks = split_message("Предмет\n" * 2500)
         self.assertGreater(len(chunks), 1)
