@@ -28,7 +28,7 @@ class CalendarTests(unittest.TestCase):
                      for row in keyboard.inline_keyboard for b in row
                      if b.callback_data.startswith("day:")]
             self.assertEqual(dates, [today + timedelta(days=n)
-                                    for n in range(2, 7 - today.weekday())])
+                                    for n in range(2, 7)])
 
     def test_empty_day_uses_requested_date(self):
         self.assertIn("24 сентября", format_schedule([], date(2026, 9, 24)))
