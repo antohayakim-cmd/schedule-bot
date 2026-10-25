@@ -22,3 +22,5 @@ class Lesson:
     room: str
     start_datetime: datetime
     end_datetime: datetime
+    is_online: bool = False
+    url: str = ""
