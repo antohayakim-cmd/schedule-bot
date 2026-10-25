@@ -36,12 +36,11 @@ def format_schedule(lessons: list[Lesson], day_date: date) -> str:
 
 
 def get_weekday_buttons(current_date: date) -> InlineKeyboardMarkup:
-    # Сегодня и завтра уже показаны. Остальные даты — до воскресенья включительно.
-    remaining = 6 - current_date.weekday()
+    # Сегодня и завтра уже показаны; в кнопки выводим следующие 5 будущих дней (на неделю вперёд).
     buttons = [InlineKeyboardButton(
         format_ru_date_short(current_date + timedelta(days=offset)),
         callback_data=f"day:{(current_date + timedelta(days=offset)).isoformat()}",
-    ) for offset in range(2, remaining + 1)]
+    ) for offset in range(2, 7)]
     rows = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
     rows.append([InlineKeyboardButton("Сегодня и завтра / обновить", callback_data="overview")])
     return InlineKeyboardMarkup(rows)
@@ -80,7 +79,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.effective_message.reply_text(
             "👋 Привет! Отправь слово «расписание» без слеша.\n"
             f"Покажу занятия группы {context.bot_data['config'].unn_group_id} на сегодня и завтра, а под ними — "
-            "будущие дни до конца текущей недели. Время московское.",
+            "кнопки со следующими днями недели. Время московское.",
             reply_markup=ReplyKeyboardMarkup([["расписание"]], resize_keyboard=True),
         )
 
@@ -123,8 +122,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             text = await overview(context, today)
         else:
             target_date = date.fromisoformat(query.data.removeprefix("day:"))
-            sunday = today + timedelta(days=6 - today.weekday())
-            if not today <= target_date <= sunday:
+            max_date = today + timedelta(days=6)
+            if not today <= target_date <= max_date:
                 await query.message.reply_text("Эта кнопка устарела. Отправь «расписание» для новых дат.")
                 return
             cfg = context.bot_data["config"]
